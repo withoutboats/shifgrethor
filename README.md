@@ -56,7 +56,25 @@ these properties:
   mechanism. A moving collector which does not support pinning is incompatible
   with shifgrethor's API goals.
 
-## What is the state of the project
+## What is the state of the project?
+
+Code has been written, sometimes frantically. A few basic smoke tests of things
+that should work working correctly has been done. No attempts at proofs have
+been made. It likely has glaring bugs. It might seg fault, ruin your laundry,
+halt and catch fire, etc.
+
+**You should not use this for anything that you depend on (e.g. "in
+production")!** But if you want to play around with it for fun, by all means.
+
+## What is `shifgrethor` going to be used for?
+
+No idea! This is currently a research project.
+
+## Why is it called `shifgrethor`?
+
+I created a new project called shifgrethor just to mess around it, the word
+wasn't really meant to mean anything. Then that scratch project turned into
+this, so the project is still called shifgrethor.
 
 ## How does `shifgrethor` work?
 
@@ -257,3 +275,6 @@ I have an adequate solution for interior mutability for data which does not
 contain any pointers to other GC'd objects which I intend to implement soon.
 For interior mutability of things which contain Gc'd objects, I am still
 investigating some possible alternatives.
+
+[tracing]: https://en.wikipedia.org/wiki/Tracing_garbage_collection
+[precise]: https://en.wikipedia.org/wiki/Tracing_garbage_collection#Precise_vs._conservative_and_internal_pointers
