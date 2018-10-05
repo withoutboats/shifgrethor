@@ -76,6 +76,8 @@ I created a new project called shifgrethor just to mess around it, the word
 wasn't really meant to mean anything. Then that scratch project turned into
 this, so the project is still called shifgrethor.
 
+"Shifgrethor" is a word from *The Lefthand of Darkness* by Ursula K. Le Guin.
+
 ## How does `shifgrethor` work?
 
 In brief, a precise tracing garbage collector like shifgrethor is designed for
