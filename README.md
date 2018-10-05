@@ -123,7 +123,7 @@ Here is the API for each of them:
 letroot!(root);
 
 // Create a new Gc'd object using that root
-let x: Gc<i32> = root.gc(0);
+let x: Gc<'_, i32> = root.gc(0);
 
 /*****************
  * Heap rooting  *
@@ -133,17 +133,17 @@ let root: HeapRoot<i32> = HeapRoot::new(0);
 
 // Unlike the stack root, which is consumed by this, this just borrows from
 // the heap root.
-let x: Gc<i32> = root.gc();
+let x: Gc<'_, i32> = root.gc();
 ```
 
 You can also reroot objects from one root to another, for example:
 
 ```rust
 fn foo<'root>(root: StackRoot<'root>) -> Gc<'root, i32> {
-    letroot!(root);
+    letroot!(inner);
 
     // x only is rooted for the lifetime of this function call
-    let x = root.gc(0);
+    let x = inner.gc(0);
     // ...
 
     // But you can reroot it later 
