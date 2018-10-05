@@ -1,0 +1,29 @@
+cargo-features = ["rename-dependency"]
+
+[package]
+name = "shifgrethor"
+version = "0.1.0"
+edition = "2018"
+authors = ["Without Boats <boats@mozilla.com>"]
+
+[dev-dependencies]
+env_logger = "0.5.13"
+
+[dependencies]
+env_logger = "0.5.13"
+
+[dependencies.derive]
+path = "src/lib/derive"
+version = "0.1.0"
+package = "shifgrethor-derive"
+
+[dependencies.gc]
+path = "src/lib/gc"
+version = "0.1.0"
+package = "shifgrethor-gc"
+
+[workspace]
+members = [
+    "src/lib/derive",
+    "src/lib/gc",
+]

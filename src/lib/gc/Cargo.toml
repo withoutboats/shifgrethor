@@ -1,0 +1,11 @@
+[package]
+name = "shifgrethor-gc"
+edition = "2018"
+version = "0.1.0"
+authors = ["Without Boats <boats@mozilla.com>"]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+log = "0.4.5"

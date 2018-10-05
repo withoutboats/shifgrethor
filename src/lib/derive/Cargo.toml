@@ -1,0 +1,18 @@
+[package]
+name = "shifgrethor-derive"
+edition = "2018"
+version = "0.1.0"
+authors = ["Without Boats <boats@mozilla.com>"]
+
+[dependencies]
+quote = "0.6.8"
+synstructure = "0.9.0"
+proc-macro2 = "0.4.19"
+
+[lib]
+path = "lib.rs"
+proc-macro = true
+
+[dependencies.syn]
+version = "0.14.9"
+features = ["full", "fold"]
