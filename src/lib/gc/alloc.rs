@@ -51,8 +51,9 @@ impl Allocation<Data> {
 impl<T: ?Sized> Allocation<T> {
     pub unsafe fn mark(&self) {
         debug!("MARKING object at:          {:x}", self.erased() as *const _ as usize);
-        self.header.marked.set(true);
-        self.dyn_data().mark()
+        if !self.header.marked.replace(true) {
+            self.dyn_data().mark()
+        }
     }
 
     pub fn data(&self) -> &T {
