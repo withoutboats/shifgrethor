@@ -9,3 +9,4 @@ path = "lib.rs"
 
 [dependencies]
 log = "0.4.5"
+pin-cell = "0.1.1"

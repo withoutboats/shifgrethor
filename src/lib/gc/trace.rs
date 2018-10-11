@@ -4,6 +4,8 @@ pub unsafe trait Trace {
     unsafe fn finalize(&mut self);
 }
 
+pub unsafe trait NullTrace: Trace { }
+
 unsafe impl<T: Trace> Trace for Option<T> {
     unsafe fn mark(&self) {
         if let Some(inner) = self { inner.mark() }
@@ -16,6 +18,8 @@ unsafe impl<T: Trace> Trace for Option<T> {
         if let Some(inner) = self { inner.finalize() }
     }
 }
+
+unsafe impl<T: NullTrace> NullTrace for Option<T> { }
 
 unsafe impl<T: Trace, E: Trace> Trace for Result<T, E> {
     unsafe fn mark(&self) {
@@ -38,6 +42,8 @@ unsafe impl<T: Trace, E: Trace> Trace for Result<T, E> {
     }
 }
 
+unsafe impl<T: NullTrace, E: NullTrace> NullTrace for Result<T, E> { }
+
 unsafe impl<T: Trace> Trace for [T] {
     unsafe fn mark(&self) {
         for elem in self { elem.mark() }
@@ -50,6 +56,8 @@ unsafe impl<T: Trace> Trace for [T] {
     }
 }
 
+unsafe impl<T: NullTrace> NullTrace for [T] { }
+
 macro_rules!
     trace_simple { ($($t:ty)*) => {$(
         unsafe impl Trace for $t {
@@ -59,6 +67,7 @@ macro_rules!
                 ptr::drop_in_place(self as *mut Self)
             }
         }
+        unsafe impl NullTrace for $t { }
     )*}
 }
 
@@ -114,6 +123,7 @@ macro_rules! trace_arrays {
                 <_ as AsMut<[T]>>::as_mut(self).finalize()
             }
         }
+        unsafe impl<T: NullTrace> NullTrace for [T; $N] { }
     )*};
 }
 
@@ -137,6 +147,7 @@ macro_rules! trace_tuples {
                 $(self.$N.finalize();)*
             }
         }
+        unsafe impl<$($T: NullTrace,)*> NullTrace for ($($T,)*) { }
     )*};
 }
 
@@ -176,6 +187,8 @@ unsafe impl<T: Trace> Trace for Vec<T> {
     }
 }
 
+unsafe impl<T: NullTrace> NullTrace for Vec<T> { }
+
 unsafe impl<T: Trace> Trace for VecDeque<T> {
     unsafe fn mark(&self) {
         for elem in self { elem.mark(); }
@@ -191,6 +204,8 @@ unsafe impl<T: Trace> Trace for VecDeque<T> {
         ptr::drop_in_place(this as *mut VecDeque<ManuallyDrop<T>>);
     }
 }
+
+unsafe impl<T: NullTrace> NullTrace for VecDeque<T> { }
 
 unsafe impl<T: Trace> Trace for LinkedList<T> {
     unsafe fn mark(&self) {
@@ -208,6 +223,8 @@ unsafe impl<T: Trace> Trace for LinkedList<T> {
     }
 }
 
+unsafe impl<T: NullTrace> NullTrace for LinkedList<T> { }
+
 unsafe impl<T: Trace + Ord> Trace for BinaryHeap<T> {
     unsafe fn mark(&self) {
         for elem in self { elem.mark(); }
@@ -224,6 +241,7 @@ unsafe impl<T: Trace + Ord> Trace for BinaryHeap<T> {
     }
 }
 
+unsafe impl<T: NullTrace + Ord> NullTrace for BinaryHeap<T> { }
 
 unsafe impl<T, S> Trace for HashSet<T, S> where
     T: Eq + std::hash::Hash + Trace,
@@ -243,6 +261,11 @@ unsafe impl<T, S> Trace for HashSet<T, S> where
         iter.for_each(|mut elem| elem.finalize());
     }
 }
+
+unsafe impl<T, S> NullTrace for HashSet<T, S> where
+    T: Eq + std::hash::Hash + NullTrace,
+    S: std::hash::BuildHasher,
+{ }
 
 unsafe impl<K, V, S> Trace for HashMap<K, V, S> where
     K: Eq + std::hash::Hash + Trace,
@@ -273,6 +296,12 @@ unsafe impl<K, V, S> Trace for HashMap<K, V, S> where
     }
 }
 
+unsafe impl<K, V, S> NullTrace for HashMap<K, V, S> where
+    K: Eq + std::hash::Hash + NullTrace,
+    V: NullTrace,
+    S: std::hash::BuildHasher,
+{ }
+
 unsafe impl<T> Trace for BTreeSet<T> where
     T: Eq + Ord + Trace,
 {
@@ -290,6 +319,10 @@ unsafe impl<T> Trace for BTreeSet<T> where
         iter.for_each(|mut elem| elem.finalize());
     }
 }
+
+unsafe impl<T> NullTrace for BTreeSet<T> where
+    T: Eq + Ord + NullTrace,
+{ }
 
 unsafe impl<K, V> Trace for BTreeMap<K, V> where
     K: Eq + Ord + Trace,
@@ -318,3 +351,45 @@ unsafe impl<K, V> Trace for BTreeMap<K, V> where
         });
     }
 }
+
+unsafe impl<K, V> NullTrace for BTreeMap<K, V> where
+    K: Eq + Ord + NullTrace,
+    V: NullTrace,
+{ }
+
+use std::cell::{Cell, RefCell};
+use pin_cell::PinCell;
+
+unsafe impl<T: NullTrace> Trace for Cell<T> {
+    unsafe fn mark(&self) { }
+    unsafe fn manage(&self) { }
+    unsafe fn finalize(&mut self) {
+        ptr::drop_in_place(self as *mut Self)
+    }
+}
+
+unsafe impl<T: NullTrace> NullTrace for Cell<T> { }
+
+unsafe impl<T: NullTrace> Trace for RefCell<T> {
+    unsafe fn mark(&self) { }
+    unsafe fn manage(&self) { }
+    unsafe fn finalize(&mut self) {
+        ptr::drop_in_place(self as *mut Self)
+    }
+}
+
+unsafe impl<T: NullTrace> NullTrace for RefCell<T> { }
+
+unsafe impl<T: Trace> Trace for PinCell<T> {
+    unsafe fn mark(&self) {
+        self.borrow().mark()
+    }
+    unsafe fn manage(&self) {
+        self.borrow().manage()
+    }
+    unsafe fn finalize(&mut self) {
+        self.get_mut().finalize()
+    }
+}
+
+unsafe impl<T: NullTrace> NullTrace for PinCell<T> { }

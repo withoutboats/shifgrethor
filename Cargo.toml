@@ -9,9 +9,6 @@ authors = ["Without Boats <boats@mozilla.com>"]
 [dev-dependencies]
 env_logger = "0.5.13"
 
-[dependencies]
-env_logger = "0.5.13"
-
 [dependencies.derive]
 path = "src/lib/derive"
 version = "0.1.0"

@@ -12,7 +12,7 @@ use crate::state::GcState;
 
 pub use crate::gc_ptr::GcPtr;
 pub use crate::root::Root;
-pub use crate::trace::Trace;
+pub use crate::trace::{Trace, NullTrace};
 
 thread_local! {
     static GC: GcState = GcState::default();
