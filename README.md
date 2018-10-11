@@ -268,15 +268,55 @@ not safe and contains undefined behavior.
 
 ### Interior mutability
 
-The final problem is interior mutability. Currently, shifgrethor does not
-support any interior mutability at all: once something is being garbage
-collected, you can no longer mutate it. Solving this problem is now the focus
-of the research in shifgrethor.
+The final problem is interior mutability: you can only get a shared reference
+to a GC'd pointer, ideally you would be able to mutate things inside of it
+using some form of interior mutability.
 
-I have an adequate solution for interior mutability for data which does not
-contain any pointers to other GC'd objects which I intend to implement soon.
-For interior mutability of things which contain Gc'd objects, I am still
-investigating some possible alternatives.
+The unique problem has to do with tracing. Let's say you have a
+`RefCell<Option<GcStore<i32>>>` inside of your type:
+
+```rust
+let x: Gc<RefCell<Option<GcStore<i32>>>>;
+
+let moved: GcStore<i32> = x.borrow_mut().take().unwrap();
+
+// The value behind `x` is now `None`. The `moved` variable is not being traced
+// at all, its entirely unrooted!
+
+// Run the garbage collector. Because `moved` is unrooted, it will be
+// collected. `moved` is now a dangling pointer
+shifgrethor::collect();
+
+// Put the moved and dangling pointer back into `x`:
+*x.borrow_mut() = Some(moved);
+
+// Observe `x`, which is now dangling. Segfault!
+println!("{}", x);
+```
+
+We cannot allow you to move traced `GcStore` pointers around without some other
+mechanism of rooting them.
+
+For this reason, shifgrethor currently provides only partial support for
+interior mutability:
+
+* There is a separate trait called `NullTrace`, which indicates that tracing
+  through this type is a no-op (i.e. it contains no Gc'd pointers). You are
+  free to have `Cell` and `RefCell` types containing `NullTrace` data.
+* `PinCell` is trace safe, because it does not allow you to move the data it
+  gives you. If you can't move the data, you can't unroot it.
+
+In other words, you are free to have normal interior mutability of anything
+that doesn't contain a Gc pointer, and you can have partial interior mutability
+(only pinned mutable references) for things that do contain Gc pointers.
+
+Note that `PinCell` introduces some problems for copying collectors, because it
+gives you a `Pin<&mut T>`, which other code (e.g. async/await code) might rely
+on *memory* stability (as opposed to semantic stability, which we rely on).
+
+Its an open problem to find new abstractable APIs which allow moving data only
+between traced memory locations, which would allow you to safely move Gc
+pointers around.
 
 [tracing]: https://en.wikipedia.org/wiki/Tracing_garbage_collection
 [precise]: https://en.wikipedia.org/wiki/Tracing_garbage_collection#Precise_vs._conservative_and_internal_pointers
