@@ -2,6 +2,7 @@ use std::fmt;
 use std::hash;
 use std::marker::{PhantomData, Pinned};
 use std::ops::Deref;
+use std::pin::Pin;
 
 use gc::{GcPtr, Trace};
 
@@ -28,6 +29,13 @@ impl<'root, T: ?Sized> Gc<'root, T> {
     pub unsafe fn rooted(ptr: GcPtr<T>) -> Gc<'root, T> {
         Gc { ptr,
             _marker: PhantomData,
+        }
+    }
+
+    // NOTE: Problematic for copying collectors
+    pub fn pin(self) -> Pin<Gc<'root, T>> {
+        unsafe {
+            Pin::new_unchecked(self)
         }
     }
 
