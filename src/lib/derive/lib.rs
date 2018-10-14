@@ -15,7 +15,7 @@ use crate::accessors::accessors;
 use crate::reroot::reroot_impl;
 use crate::trace::trace_impl;
 
-decl_derive!([GC, attributes(gc, finalize)] => gc_derive);
+decl_derive!([GC, attributes(gc)] => gc_derive);
 
 fn gc_derive(s: synstructure::Structure) -> TokenStream {
     let tagged_fields = tagged_fields(&s);
