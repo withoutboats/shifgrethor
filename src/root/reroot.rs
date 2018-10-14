@@ -1,6 +1,7 @@
+use std::cell;
 use std::mem;
 
-use gc::{GcPtr, Trace};
+use gc::{GcPtr, Trace, NullTrace};
 
 use crate::{Gc, GcStore};
 
@@ -27,6 +28,18 @@ unsafe impl<'root, 'r2, T: Reroot<'root> + ?Sized> Reroot<'root> for Gc<'r2, T> 
 
 unsafe impl<'root, 'r2, T: Reroot<'root> + ?Sized> Reroot<'root> for GcStore<'r2, T> {
     type Rerooted = GcStore<'root, T::Rerooted>;
+}
+
+unsafe impl<'root, T: Reroot<'root> + ?Sized> Reroot<'root> for pin_cell::PinCell<T> {
+    type Rerooted = pin_cell::PinCell<T::Rerooted>;
+}
+
+unsafe impl<'root, T: NullTrace + Reroot<'root> + ?Sized> Reroot<'root> for cell::Cell<T> {
+    type Rerooted = cell::Cell<T::Rerooted>;
+}
+
+unsafe impl<'root, T: NullTrace + Reroot<'root> + ?Sized> Reroot<'root> for cell::RefCell<T> {
+    type Rerooted = cell::RefCell<T::Rerooted>;
 }
 
 macro_rules! reroot_simple {

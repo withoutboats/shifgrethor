@@ -41,22 +41,13 @@ pub fn trace_impl(s: &Structure) -> TokenStream {
 }
 
 fn has_drop(s: &Structure) -> HasDrop {
-    if let Some(attr) = s.ast().attrs.iter().find(|attr| super::is_attr(attr, "gc")) {
-        let ident: Ident = {
-            let attr_content = attr.tts.clone().into_iter().next().unwrap();
-            if let TokenTree::Group(attr_content) = attr_content { 
-                parse2(attr_content.stream()).unwrap()
-            } else { panic!() }
-        };
-        if ident == "finalize" {
-            HasDrop::Drop
-        } else if ident == "unsafe_finalize" {
-            HasDrop::UnsafeDrop
-        } else {
-            HasDrop::None
-        }
-    } else {
-        HasDrop::None
+    let finalize = super::has_attr(s, "finalize");
+    let unsafe_finalize = super::has_attr(s, "unsafe_finalize");
+    match (finalize, unsafe_finalize) {
+        (true, true)    => panic!("type cannot have both finalize & unsafe_finalize attributes"),
+        (true, false)   => HasDrop::Drop,
+        (false, true)   => HasDrop::UnsafeDrop,
+        (false, false)  => HasDrop::None
     }
 }
 

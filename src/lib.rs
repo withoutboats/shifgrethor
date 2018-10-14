@@ -13,7 +13,7 @@ mod store;
 #[cfg(test)]
 mod tests;
 
-pub use ::gc::{Trace, collect};
+pub use ::gc::{Trace, NullTrace, collect};
 pub use derive::*;
 
 pub mod raw {

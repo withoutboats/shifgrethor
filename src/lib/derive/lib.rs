@@ -5,13 +5,18 @@
 
 extern crate proc_macro;
 
-use proc_macro2::TokenStream;
-
 mod accessors;
+mod null_trace;
 mod reroot;
 mod trace;
 
+use proc_macro2::*;
+use syn::*;
+use syn::buffer::TokenBuffer;
+use syn::punctuated::Punctuated;
+
 use crate::accessors::accessors;
+use crate::null_trace::null_trace_impl;
 use crate::reroot::reroot_impl;
 use crate::trace::trace_impl;
 
@@ -22,11 +27,13 @@ fn gc_derive(s: synstructure::Structure) -> TokenStream {
     let accessors = accessors(&s, &tagged_fields[..]);
     let trace_impl = trace_impl(&s);
     let reroot_impl = reroot_impl(&s);
+    let null_trace_impl = null_trace_impl(&s);
     let gc_impl = gc_impl(&s);
     quote! {
         #accessors
         #trace_impl
         #reroot_impl
+        #null_trace_impl
         #gc_impl
     }
 }
@@ -48,4 +55,15 @@ fn tagged_fields<'a>(s: &'a synstructure::Structure<'a>) -> Vec<&'a synstructure
 
 fn is_attr(attr: &syn::Attribute, ident: &str) -> bool {
     attr.path.segments.last().unwrap().value().ident == ident
+}
+
+fn has_attr(s: &synstructure::Structure, ident: &str) -> bool {
+    if let Some(attr) = s.ast().attrs.iter().find(|attr| is_attr(attr, "gc")) {
+        let attr_content = attr.tts.clone().into_iter().next().unwrap();
+        if let TokenTree::Group(attr_content) = attr_content { 
+            let buffer = TokenBuffer::new2(attr_content.stream());
+            let idents = Punctuated::<Ident, token::Comma>::parse_terminated(buffer.begin()).unwrap().0;
+            idents.into_iter().any(|i| i == ident)
+        } else { false }
+    } else { false }
 }

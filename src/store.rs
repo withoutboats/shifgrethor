@@ -25,6 +25,7 @@ macro_rules! transmute_store {
 
 
 use std::collections::*;
+use pin_cell::PinCell;
 
 transmute_store! {
     for<T> Box<GcStore<'r, T>> => Box<Gc<'root, T>>;
@@ -35,4 +36,5 @@ transmute_store! {
     for<T> HashSet<GcStore<'r, T>> => HashSet<Gc<'root, T>>;
     for<T> BTreeSet<GcStore<'r, T>> => BTreeSet<Gc<'root, T>>;
     for<T> BinaryHeap<GcStore<'r, T>> => BinaryHeap<Gc<'root, T>>;
+    for<T> PinCell<GcStore<'r, T>> => PinCell<Gc<'root, T>>;
 }
