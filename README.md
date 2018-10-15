@@ -101,53 +101,48 @@ intrusive collection. As a result, our roots cannot be moved around.
 
 Fortunately, we have recently made a lot of progress on supporting intrusive
 data structures in Rust, thanks to the pinning API. The rooting layer sits on
-top of an underlying pinning API, which forms a doubly linked list of all of
-your roots.
+top of an underlying pinning API, which we use to guarantee that roots are
+dropped in a deterministic stack order.
 
-There are two kinds of roots:
-
-- **Stack roots:** these roots are just an object in the stack. As a result,
-  they are tied to the lifetime of that particular stackframe.
-- **Heap roots:** these roots own a heap allocated pointer to a root in the
-  heap. As a result, they are not tied to any particular lifetime, and you can
-  move the root around, but they cost a single heap allocation per root.
-
-Here is the API for each of them:
+Roots are created with a special macro called `letroot!`. The roots created
+with this macro carry a special lifetime called `'root`, which is the lifetime
+of the scope they are created in. You can use the `gc` method on a root to
+begin garbage collecting some data:
 
 ```rust
-/*****************
- * Stack rooting *
- *****************/
-
-// The root is declared with this macro:
+// root: Root<'root>;
 letroot!(root);
 
-// Create a new Gc'd object using that root
-let x: Gc<'_, i32> = root.gc(0);
-
-/*****************
- * Heap rooting  *
- *****************/
-
-let root: HeapRoot<i32> = HeapRoot::new(0);
-
-// Unlike the stack root, which is consumed by this, this just borrows from
-// the heap root.
-let x: Gc<'_, i32> = root.gc();
+let x: Gc<'root, i32> = root.gc(0);
 ```
 
-You can also reroot objects from one root to another, for example:
+The `Gc` pointer is a copyable reference to the data which proves that the data
+has been rooted. It carries the lifetime of the root, and therefore can't
+outlive the root you used to create it.
+
+In order to return Gc'd data from a function, you need to pass a root into the
+function:
 
 ```rust
-fn foo<'root>(root: StackRoot<'root>) -> Gc<'root, i32> {
+fn foo(root: Root<'root>) -> Gc<'root, i32> {
+    root.gc(0);
+}
+```
+
+You can also use a root to reroot data that has already been rooted once,
+extending its lifetime:
+
+```rust
+fn foo(outer: Root<'root1>) -> Gc<'root1, i32> {
+    // This root is only alive for the frame of this function call
+    //
+    // inner: Gc<'root2, i32>
     letroot!(inner);
+    let x: Gc<'root2, i32> = inner.gc(0);
 
-    // x only is rooted for the lifetime of this function call
-    let x = inner.gc(0);
-    // ...
-
-    // But you can reroot it later 
-    root.reroot(x)
+    // But you can extend a Gc rooted only for this function using the outer root:
+    let x: Gc<'root1, i32> = outer.reroot(x);
+    return x;
 }
 ```
 
