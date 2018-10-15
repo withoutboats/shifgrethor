@@ -1,44 +1,25 @@
-use std::ptr::NonNull;
-
-use log::*;
-
-use crate::alloc::{Allocation, Data};
-use crate::list::List;
-use crate::trace::Trace;
 use crate::gc_ptr::GcPtr;
+use crate::trace::Trace;
 
 pub struct Root {
-    list: List<Root>,
-    alloc: NonNull<Allocation<Data>>,
+    pushed: bool,
 }
 
 impl Root {
-    /// A root (not yet enrooted).
-    ///
-    /// The pointer you pass must not be dangling.
-    pub unsafe fn new<T: Trace + ?Sized>(gc_ptr: GcPtr<T>) -> Root {
-        Root {
-            list: List::default(),
-            alloc: gc_ptr.erased(),
-        }
+    pub fn new() -> Root {
+        Root { pushed: false }
     }
 
-    pub(crate) fn mark(&self) {
-        unsafe {
-            self.alloc.as_ref().mark();
-        }
-
-    }
-}
-
-impl AsRef<List<Root>> for Root {
-    fn as_ref(&self) -> &List<Root> {
-        &self.list
+    pub unsafe fn enroot<T: Trace + ?Sized>(&mut self, gc_ptr: GcPtr<T>) {
+        super::push_root(gc_ptr);
+        self.pushed = true;
     }
 }
 
 impl Drop for Root {
     fn drop(&mut self) {
-        debug!(" DROPPING root at:           {:x}", self as *const _ as usize);
+        if self.pushed {
+            super::pop_root();
+        }
     }
 }

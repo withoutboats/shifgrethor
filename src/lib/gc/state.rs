@@ -1,24 +1,27 @@
+use std::cell::{Ref, RefCell};
 use std::pin::Pin;
+use std::ptr::NonNull;
 
 use log::*;
 
 use crate::alloc::{Allocation, Data};
 use crate::gc_ptr::GcPtr;
 use crate::list::List;
-use crate::root::Root;
 use crate::trace::Trace;
 
 #[derive(Default)]
 pub struct GcState {
     objects: List<Allocation<Data>>,
-    roots: List<Root>,
+    roots: RefCell<Vec<NonNull<Allocation<Data>>>>,
 }
 
 impl GcState {
     pub fn collect(self: Pin<&Self>) {
-        for root in self.roots() {
+        for root in &self.roots()[..] {
             debug!("TRACING from root at:       {:x}", &*root as *const _ as usize);
-            root.mark();
+            unsafe {
+                root.as_ref().mark();
+            }
         }
 
         for object in self.objects() {
@@ -39,16 +42,23 @@ impl GcState {
         ptr.data().manage();
     }
 
-    pub fn enroot(self: Pin<&Self>, root: Pin<&Root>) {
-        debug!("ENROOTING root at:          {:x}", &*root as *const _ as usize);
-        self.roots().insert(root);
+    pub fn push_root<T: Trace + ?Sized>(self: Pin<&Self>, root: GcPtr<T>) {
+        let root: NonNull<Allocation<Data>> = root.erased();
+        debug!("ENROOTING root at:          {:x}", root.as_ptr() as usize);
+        self.roots.borrow_mut().push(root);
+    }
+
+    pub fn pop_root(self: Pin<&Self>) {
+        if let Some(root) = self.roots.borrow_mut().pop() {
+            debug!(" DROPPING root at:           {:x}", root.as_ptr() as usize);
+        }
+    }
+
+    pub fn roots(&self) -> Ref<'_, [NonNull<Allocation<Data>>]> {
+        Ref::map(self.roots.borrow(), |v| &v[..])
     }
 
     pub fn objects<'a>(self: Pin<&'a Self>) -> Pin<&'a List<Allocation<Data>>> {
         unsafe { Pin::map_unchecked(self, |this| &this.objects) }
-    }
-
-    pub fn roots<'a>(self: Pin<&'a Self>) -> Pin<&'a List<Root>> {
-        unsafe { Pin::map_unchecked(self, |this| &this.roots) }
     }
 }

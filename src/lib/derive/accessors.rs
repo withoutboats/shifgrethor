@@ -23,9 +23,9 @@ pub fn accessors(s: &Structure, gcs: &[&BindingInfo]) -> TokenStream {
         let ty: &Type = &b_ast.ty;
 
         quote! {
-            #visibility fn #method<'__root>(self: &'__root shifgrethor::Gc<'__root, Self>) -> <#ty as shifgrethor::Store<'__root>>::Accessor {
+            #visibility fn #method<'__root>(self: &'__root shifgrethor::Gc<'__root, Self>) -> <#ty as shifgrethor::raw::Store<'__root>>::Accessor {
                 unsafe {
-                    shifgrethor::Store::rooted(&self.#field)
+                    shifgrethor::raw::Store::rooted(&self.#field)
                 }
             }
         }

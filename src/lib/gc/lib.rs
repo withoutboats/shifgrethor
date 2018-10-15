@@ -37,11 +37,6 @@ pub unsafe fn manage<T: Trace + ?Sized>(ptr: GcPtr<T>) {
     with_gc(|gc| gc.manage(ptr))
 }
 
-/// Enroot a Root
-pub fn enroot(root: Pin<&Root>) {
-    with_gc(|gc| gc.enroot(root))
-}
-
 /// Count objects managed by the GC
 pub fn count_managed_objects() -> usize {
     with_gc(|gc| gc.objects().into_iter().count())
@@ -49,9 +44,16 @@ pub fn count_managed_objects() -> usize {
 
 /// Count roots into the GC
 pub fn count_roots() -> usize {
-    with_gc(|gc| gc.roots().into_iter().count())
+    with_gc(|gc| gc.roots().len())
 }
 
+fn push_root<T: Trace + ?Sized>(ptr: GcPtr<T>) {
+    with_gc(|gc| gc.push_root(ptr))
+}
+
+fn pop_root() {
+    with_gc(|gc| gc.pop_root())
+}
 
 fn with_gc<T, F: FnOnce(Pin<&GcState>) -> T>(f: F) -> T {
     GC.with(|gc| {

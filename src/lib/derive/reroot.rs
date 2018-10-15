@@ -10,7 +10,7 @@ pub fn reroot_impl(s: &Structure) -> TokenStream {
     s.gen_impl(quote! {
         extern crate shifgrethor;
 
-        gen unsafe impl<'__root> shifgrethor::Reroot<'__root> for @Self where
+        gen unsafe impl<'__root> shifgrethor::raw::Reroot<'__root> for @Self where
             #(#bounds,)*
         {
             type Rerooted = #rerooted;
@@ -28,7 +28,7 @@ fn field_where_clause(field: &Field) -> TokenStream {
     let ty = &field.ty;
     let rerooted_ty = fold::fold_type(&mut RootFolder, ty.clone());
     quote! {
-        #ty: shifgrethor::Reroot<'__root, Rerooted = #rerooted_ty>
+        #ty: shifgrethor::raw::Reroot<'__root, Rerooted = #rerooted_ty>
     }
 }
 

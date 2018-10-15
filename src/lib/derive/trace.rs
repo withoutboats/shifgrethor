@@ -16,14 +16,14 @@ pub fn trace_impl(s: &Structure) -> TokenStream {
     let bound = match &drop {
         HasDrop::Drop       => {
             assert!(only_has_root_lifetime(s), "GC'd objects with lifetimes other than 'root must use UnsafeFinalize");
-            quote! { for<'__root> Self: shifgrethor::Reroot<'__root> }
+            quote! { for<'__root> Self: shifgrethor::raw::Reroot<'__root> }
         }
         _                   => quote! { },
     };
     s.gen_impl(quote! {
         extern crate shifgrethor;
 
-        gen unsafe impl shifgrethor::Trace for @Self where
+        gen unsafe impl shifgrethor::raw::Trace for @Self where
             #bound
         {
             unsafe fn mark(&self) {

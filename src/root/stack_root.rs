@@ -1,18 +1,18 @@
 use std::pin::Pin;
 
-use gc::{GcPtr, Trace, Root};
+use gc::{GcPtr, Trace};
 
 use crate::Gc;
 use crate::root::Reroot;
 
-pub struct StackRoot<'root> {
-    root: Pin<&'root mut Option<Root>>,
+pub struct Root<'root> {
+    root: Pin<&'root mut gc::Root>,
 }
 
-impl<'root> StackRoot<'root> {
+impl<'root> Root<'root> {
     #[doc(hidden)]
-    pub fn new(root: Pin<&'root mut Option<Root>>) -> StackRoot<'root> {
-        StackRoot { root }
+    pub unsafe fn new(root: &'root mut gc::Root) -> Root<'root> {
+        Root { root: Pin::new_unchecked(root) }
     }
 
     pub fn gc<T>(self, data: T) -> Gc<'root, T::Rerooted> where
@@ -43,31 +43,21 @@ impl<'root> StackRoot<'root> {
     }
 
     unsafe fn emplace<T: Trace + ?Sized>(&mut self, ptr: GcPtr<T>) {
-        let new_root = Root::new(ptr);
-        let pin: Pin<&mut Root> = Pin::map_unchecked_mut(Pin::as_mut(&mut self.root), |root| {
-            *root = Some(new_root);
-            root.as_mut().unwrap()
-        });
-        gc::enroot(Pin::as_ref(&pin))
+        Pin::get_mut(Pin::as_mut(&mut self.root)).enroot(ptr)
     }
-}
-
-#[doc(hidden)]
-pub unsafe fn pin_root(root: &mut Option<Root>) -> Pin<&mut Option<Root>> {
-    Pin::new_unchecked(root)
 }
 
 #[macro_export]
 macro_rules! letroot {
     ($($root:ident)*) => {$(
         // Ensure the root is owned
-        let mut $root = None;
+        let mut $root = $crate::raw::Root::new();
 
         // Shadow the original binding so that it can't be directly accessed
         // ever again.
         #[allow(unused_mut)]
         let mut $root = unsafe {
-            $crate::StackRoot::new($crate::pin_root(&mut $root))
+            $crate::Root::new(&mut $root)
         };
     )*}
 }
