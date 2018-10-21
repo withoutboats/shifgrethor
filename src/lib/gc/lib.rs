@@ -47,12 +47,16 @@ pub fn count_roots() -> usize {
     with_gc(|gc| gc.roots().len())
 }
 
-fn push_root<T: Trace + ?Sized>(ptr: GcPtr<T>) {
-    with_gc(|gc| gc.push_root(ptr))
+fn new_root() -> usize {
+    with_gc(|gc| gc.new_root())
 }
 
-fn pop_root() {
-    with_gc(|gc| gc.pop_root())
+fn set_root<T: Trace + ?Sized>(idx: usize, ptr: GcPtr<T>) {
+    with_gc(|gc| gc.set_root(idx, ptr))
+}
+
+fn pop_root(idx: usize) {
+    with_gc(|gc| gc.pop_root(idx))
 }
 
 fn with_gc<T, F: FnOnce(Pin<&GcState>) -> T>(f: F) -> T {

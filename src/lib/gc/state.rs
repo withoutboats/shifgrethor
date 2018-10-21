@@ -12,15 +12,17 @@ use crate::trace::Trace;
 #[derive(Default)]
 pub struct GcState {
     objects: List<Allocation<Data>>,
-    roots: RefCell<Vec<NonNull<Allocation<Data>>>>,
+    roots: RefCell<Vec<Option<NonNull<Allocation<Data>>>>>,
 }
 
 impl GcState {
     pub fn collect(self: Pin<&Self>) {
         for root in &self.roots()[..] {
-            debug!("TRACING from root at:       {:x}", &*root as *const _ as usize);
-            unsafe {
-                root.as_ref().mark();
+            if let Some(root) = root {
+                debug!("TRACING from root at:       {:x}", &*root as *const _ as usize);
+                unsafe {
+                    root.as_ref().mark();
+                }
             }
         }
 
@@ -42,19 +44,27 @@ impl GcState {
         ptr.data().manage();
     }
 
-    pub fn push_root<T: Trace + ?Sized>(self: Pin<&Self>, root: GcPtr<T>) {
-        let root: NonNull<Allocation<Data>> = root.erased();
-        debug!("ENROOTING root at:          {:x}", root.as_ptr() as usize);
-        self.roots.borrow_mut().push(root);
+    pub fn new_root(self: Pin<&Self>) -> usize {
+        let mut roots = self.roots.borrow_mut();
+        let ret = roots.len();
+        roots.push(None);
+        ret
     }
 
-    pub fn pop_root(self: Pin<&Self>) {
-        if let Some(root) = self.roots.borrow_mut().pop() {
+    pub fn set_root<T: Trace + ?Sized>(self: Pin<&Self>, idx: usize, ptr: GcPtr<T>) {
+        let root: NonNull<Allocation<Data>> = ptr.erased();
+        debug!("ENROOTING root at:          {:x}", root.as_ptr() as usize);
+        self.roots.borrow_mut()[idx] = Some(root);
+    }
+
+    pub fn pop_root(self: Pin<&Self>, idx: usize) {
+        debug_assert!(idx + 1 == self.roots.borrow().len());
+        if let Some(root) = self.roots.borrow_mut().pop().unwrap() {
             debug!(" DROPPING root at:           {:x}", root.as_ptr() as usize);
         }
     }
 
-    pub fn roots(&self) -> Ref<'_, [NonNull<Allocation<Data>>]> {
+    pub fn roots(&self) -> Ref<'_, [Option<NonNull<Allocation<Data>>>]> {
         Ref::map(self.roots.borrow(), |v| &v[..])
     }
 
