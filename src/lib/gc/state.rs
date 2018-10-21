@@ -17,9 +17,9 @@ pub struct GcState {
 
 impl GcState {
     pub fn collect(self: Pin<&Self>) {
-        for root in &self.roots()[..] {
+        for (idx, root) in self.roots()[..].iter().enumerate() {
             if let Some(root) = root {
-                debug!("TRACING from root at:       {:x}", &*root as *const _ as usize);
+                debug!("TRACING from root at:       {:x} (idx {:x})", &*root as *const _ as usize, idx);
                 unsafe {
                     root.as_ref().mark();
                 }
@@ -53,14 +53,14 @@ impl GcState {
 
     pub fn set_root<T: Trace + ?Sized>(self: Pin<&Self>, idx: usize, ptr: GcPtr<T>) {
         let root: NonNull<Allocation<Data>> = ptr.erased();
-        debug!("ENROOTING root at:          {:x}", root.as_ptr() as usize);
+        debug!("ENROOTING root at:          {:x} (idx {:x})", root.as_ptr() as usize, idx);
         self.roots.borrow_mut()[idx] = Some(root);
     }
 
     pub fn pop_root(self: Pin<&Self>, idx: usize) {
         debug_assert!(idx + 1 == self.roots.borrow().len());
         if let Some(root) = self.roots.borrow_mut().pop().unwrap() {
-            debug!(" DROPPING root at:           {:x}", root.as_ptr() as usize);
+            debug!(" DROPPING root at:           {:x} (idx {:x})", root.as_ptr() as usize, idx);
         }
     }
 
