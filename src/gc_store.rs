@@ -1,4 +1,4 @@
-use std::marker::{PhantomData, Pinned};
+use std::marker::{PhantomData, PhantomPinned};
 
 use gc::{GcPtr, Trace};
 
@@ -6,7 +6,7 @@ use crate::Gc;
 
 pub struct GcStore<'root, T: ?Sized + 'root> {
     ptr: GcPtr<T>,
-    _marker: PhantomData<(&'root T, Pinned)>,
+    _marker: PhantomData<(&'root T, PhantomPinned)>,
 }
 
 impl<'root, T: Trace> GcStore<'root, T> {
@@ -82,4 +82,3 @@ impl<'root, T: ?Sized> Drop for GcStore<'root, T> {
         }
     }
 }
-

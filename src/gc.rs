@@ -1,6 +1,6 @@
 use std::fmt;
 use std::hash;
-use std::marker::{PhantomData, Pinned};
+use std::marker::{PhantomData, PhantomPinned};
 use std::ops::Deref;
 use std::pin::Pin;
 
@@ -8,7 +8,7 @@ use gc::{GcPtr, Trace};
 
 pub struct Gc<'root, T: ?Sized + 'root> {
     ptr: GcPtr<T>,
-    _marker: PhantomData<(&'root T, Pinned)>,
+    _marker: PhantomData<(&'root T, PhantomPinned)>,
 }
 
 impl<'root, T: ?Sized> Clone for Gc<'root, T> {
