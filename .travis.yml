@@ -1,0 +1,14 @@
+language: rust
+os:
+  - linux
+rust:
+  - nightly-2018-12-24
+
+sudo: false
+env:
+  global:
+    - RUST_BACKTRACE=1
+
+script:
+  - cargo build --verbose
+  - cargo test --verbose

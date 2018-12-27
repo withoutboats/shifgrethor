@@ -17,7 +17,7 @@ pub struct GcState {
 
 impl GcState {
     pub fn collect(self: Pin<&Self>) {
-        for (idx, root) in self.roots()[..].iter().enumerate() {
+        for (idx, root) in self.roots().iter().enumerate() {
             if let Some(root) = root {
                 debug!("TRACING from root at:       {:x} (idx {:x})", &*root as *const _ as usize, idx);
                 unsafe {
