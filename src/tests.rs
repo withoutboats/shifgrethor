@@ -4,18 +4,26 @@ use super::*;
 #[test]
 fn stack_rooted() {
     let _ = env_logger::try_init();
-    letroot!(root);
-    let ptr1 = root.gc(0xBADCAFE);
-    assert_eq!(*ptr1, 0xBADCAFE);
+
+    {   letroot!(root);
+
+        let ptr1 = root.gc(0xBADCAFE);
+        assert_eq!(*ptr1, 0xBADCAFE);
+        collect();
+        let ptr2 = ptr1;
+        assert_eq!(*ptr2, 0xBADCAFE);
+
+    }
+
+    // Ensure that it gets collected once all roots are gone
     collect();
-    let ptr2 = ptr1;
-    assert_eq!(*ptr2, 0xBADCAFE);
+    assert_eq!(raw::count_managed_objects(), 0);
 }
 
 #[test]
 fn rerooting() {
     let _ = env_logger::try_init();
-    
+
     {   letroot!(outer_root);
 
         let ptr2 = {   letroot!(inner_root);
