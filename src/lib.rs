@@ -2,7 +2,6 @@
 // likenesses, but from the difference, that that love came: and it was itself
 // the bridge, the only bridge, across what divided us.
 //      - Ursula K. Le Guin
-#![feature(pin)]
 
 mod gc;
 mod gc_store;
