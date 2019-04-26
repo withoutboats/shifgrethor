@@ -1,4 +1,4 @@
-#![feature(extern_types, pin, arbitrary_self_types)]
+#![feature(extern_types, arbitrary_self_types)]
 mod alloc;
 mod gc_ptr;
 mod list;

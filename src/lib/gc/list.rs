@@ -1,12 +1,12 @@
 use std::cell::Cell;
-use std::marker::{Pinned, PhantomData};
+use std::marker::{PhantomPinned, PhantomData};
 use std::pin::Pin;
 use std::ptr::NonNull;
 
 pub struct List<T: AsRef<List<T>> + ?Sized> {
     prev: Cell<Option<NonNull<List<T>>>>,
     next: Cell<Option<NonNull<T>>>,
-    _pinned: Pinned,
+    _pinned: PhantomPinned,
 }
 
 impl<T: AsRef<List<T>> + ?Sized> Default for List<T> {
@@ -14,7 +14,7 @@ impl<T: AsRef<List<T>> + ?Sized> Default for List<T> {
         List {
             prev: Cell::default(),
             next: Cell::default(), 
-            _pinned: Pinned,
+            _pinned: PhantomPinned,
         }
     }
 }
